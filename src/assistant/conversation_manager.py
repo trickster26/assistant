@@ -3,6 +3,8 @@ from typing import List, Dict, Optional
 from ..utils.logger import setup_logger
 from .thread_manager import ThreadManager
 from .assistant_manager import AssistantManager
+from .conversation_stats import ConversationStats
+import time
 
 logger = setup_logger(__name__)
 
@@ -21,6 +23,7 @@ class ConversationManager:
         self.thread_mgr = ThreadManager()
         self.conversations: Dict[str, Conversation] = {}
         self.logger = logger
+        self.conversation_stats: Dict[str, ConversationStats] = {}
 
     def create_conversation(self, instructions: str = None) -> Conversation:
         """Create a new conversation with a dedicated assistant and thread"""
@@ -48,16 +51,18 @@ class ConversationManager:
     async def send_message(self, thread_id: str, message: str) -> str:
         """Send a message in a conversation and get the response"""
         try:
+            start_time = time.time()
             conversation = self.conversations.get(thread_id)
+            
             if not conversation:
                 raise ValueError(f"No conversation found with thread ID: {thread_id}")
 
-            # Update conversation stats
-            conversation.last_active = datetime.now()
-            conversation.message_count += 1
-
-            # Log the incoming message
-            self.logger.debug(f"Sending message in thread {thread_id}: {message[:50]}...")
+            # Initialize stats if not exists
+            if thread_id not in self.conversation_stats:
+                self.conversation_stats[thread_id] = ConversationStats()
+            
+            # Update user message stats
+            self.conversation_stats[thread_id].update_message_stats("user")
 
             # Add message to thread
             self.thread_mgr.add_message(thread_id, message)
@@ -68,25 +73,57 @@ class ConversationManager:
                 assistant_id=conversation.assistant_id
             )
 
-            self.logger.debug(f"Received response in thread {thread_id}: {response[:50]}...")
+            # Calculate response time and update assistant stats
+            response_time = time.time() - start_time
+            self.conversation_stats[thread_id].update_message_stats("assistant", response_time)
+
             return response
 
         except Exception as e:
             self.logger.error(f"Error in conversation {thread_id}: {str(e)}")
             raise
 
-    def get_conversation_history(self, thread_id: str) -> List[Dict]:
-        """Get the full conversation history"""
+    def get_conversation_history(self, thread_id: str, limit: int = None, before: str = None) -> Dict:
+        """
+        Get detailed conversation history with stats
+        
+        Args:
+            thread_id: The thread ID
+            limit: Maximum number of messages to return
+            before: Message ID to fetch history before
+        """
         try:
+            # Get messages from thread
             messages = self.thread_mgr.get_messages(thread_id)
-            return [
-                {
+            
+            # Process messages into a structured format
+            processed_messages = []
+            for msg in messages.data[:limit]:
+                processed_message = {
+                    'id': msg.id,
                     'role': msg.role,
                     'content': msg.content[0].text.value,
-                    'created_at': msg.created_at
+                    'created_at': msg.created_at,
+                    'metadata': getattr(msg, 'metadata', {})
                 }
-                for msg in messages.data
-            ]
+                processed_messages.append(processed_message)
+
+            # Get conversation stats
+            stats = self.conversation_stats.get(thread_id)
+            
+            return {
+                'messages': processed_messages,
+                'stats': {
+                    'total_messages': stats.message_stats.total_messages,
+                    'user_messages': stats.message_stats.user_messages,
+                    'assistant_messages': stats.message_stats.assistant_messages,
+                    'average_response_time': stats.message_stats.average_response_time,
+                    'conversation_duration': stats.get_conversation_duration(),
+                    'last_message_time': stats.message_stats.last_message_time.isoformat() 
+                        if stats.message_stats.last_message_time else None
+                }
+            }
+
         except Exception as e:
             self.logger.error(f"Error fetching conversation history: {str(e)}")
             raise
