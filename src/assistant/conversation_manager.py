@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List, Dict, Optional
-from ..utils.logger import setup_logger
+from .utils.logger import setup_logger
 from .thread_manager import ThreadManager
 from .assistant_manager import AssistantManager
 from .conversation_stats import ConversationStats

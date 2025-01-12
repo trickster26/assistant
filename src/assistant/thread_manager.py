@@ -1,5 +1,5 @@
 from openai import OpenAI
-from ..config.settings import OPENAI_API_KEY
+from .config.settings import OPENAI_API_KEY
 import time
 
 class ThreadManager:

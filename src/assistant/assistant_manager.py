@@ -1,5 +1,5 @@
 from openai import OpenAI
-from ..config.settings import OPENAI_API_KEY, ASSISTANT_MODEL
+from .config.settings import OPENAI_API_KEY, ASSISTANT_MODEL
 
 class AssistantManager:
     def __init__(self):

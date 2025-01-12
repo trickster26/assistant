@@ -1,6 +1,6 @@
 from assistant.conversation_manager import ConversationManager
 import asyncio
-from utils.logger import setup_logger
+from assistant.utils.logger import setup_logger
 
 logger = setup_logger("main")
 
