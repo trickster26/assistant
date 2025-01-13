@@ -53,15 +53,28 @@ def handle_gather():
         call_sid = request.values.get('CallSid')
         speech_result = request.values.get('SpeechResult')
         
+        logger.info(f"Received gather webhook for call {call_sid}")
+        logger.info(f"Speech result: {speech_result}")
+        
         if speech_result:
-            logger.info(f"Received speech: {speech_result}")
+            # Create an event loop for async processing
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
             
-            # Process with assistant
-            response = asyncio.run(assistant_handler.process_message(call_sid, speech_result))
-            
-            # Send response back to call
-            twilio_handler.send_message_to_call(call_sid, response)
-            
+            try:
+                # Process with assistant
+                logger.info("Processing with assistant...")
+                response = loop.run_until_complete(
+                    assistant_handler.process_message(call_sid, speech_result)
+                )
+                logger.info(f"Got assistant response: {response}")
+                
+                # Send response back to call
+                twilio_handler.send_message_to_call(call_sid, response)
+                
+            finally:
+                loop.close()
+        
         # Return TwiML to continue gathering
         response = VoiceResponse()
         response.gather(
@@ -75,7 +88,7 @@ def handle_gather():
         return Response(str(response), mimetype='text/xml')
         
     except Exception as e:
-        logger.error(f"Error in gather: {e}")
+        logger.error(f"Error in gather: {e}", exc_info=True)
         return str(e), 500
 
 @app.route('/call-status', methods=['POST'])
