@@ -4,7 +4,10 @@ from .config.twilio_config import (
     TWILIO_ACCOUNT_SID,
     TWILIO_AUTH_TOKEN,
     TWILIO_PHONE_NUMBER,
-    SERVER_URL
+    SERVER_URL,
+    GATHER_TIMEOUT,
+    SPEECH_TIMEOUT,
+    CALL_TIMEOUT
 )
 from .utils.logger import setup_logger
 
@@ -23,10 +26,12 @@ class TwilioHandler:
                 from_=self.phone_number,
                 url=f"{SERVER_URL}/incoming-call",
                 record=True,
-                timeout=600,  # 10 min timeout
+                timeout=CALL_TIMEOUT,
                 status_callback=f"{SERVER_URL}/call-status",
                 status_callback_event=['initiated', 'ringing', 'answered', 'completed'],
-                status_callback_method='POST'
+                status_callback_method='POST',
+                fallback_url=f"{SERVER_URL}/fallback",
+                fallback_method='POST'
             )
             logger.info(f"Initiated call: {call.sid}")
             return call.sid
@@ -36,29 +41,31 @@ class TwilioHandler:
             
     def generate_twiml_for_stream(self):
         """Generate TwiML for media streams"""
-        response = VoiceResponse()
-        
-        # Add initial greeting
-        response.say("Hello! I'm your AI assistant. How can I help you today?", voice='alice')
-        
-        # Start the stream
-        connect = Connect()
-        stream = Stream(name='audio_stream', url=f"{SERVER_URL}/media-stream")
-        stream.parameter(name='track', value='both_tracks')
-        connect.stream(stream)
-        response.append(connect)
-        
-        # Add a gather to keep the call alive and capture DTMF
-        response.gather(
-            input='speech dtmf',
-            action=f"{SERVER_URL}/gather",
-            method='POST',
-            timeout=3600,
-            speechTimeout='auto'
-        )
-        
-        return str(response)
-        
+        try:
+            response = VoiceResponse()
+            
+            # Add initial greeting
+            response.say("Hello! I'm your AI assistant. How can I help you today?", voice='alice')
+            
+            # Add gather for speech input
+            gather = response.gather(
+                input='speech dtmf',
+                action=f"{SERVER_URL}/gather",
+                method='POST',
+                timeout=GATHER_TIMEOUT,
+                speechTimeout=SPEECH_TIMEOUT,
+                hints="help, stop, goodbye"
+            )
+            
+            # Add fallback message if no input received
+            response.say("I didn't catch that. Please try again.", voice='alice')
+            response.redirect(f"{SERVER_URL}/incoming-call")
+            
+            return str(response)
+        except Exception as e:
+            logger.error(f"Error generating TwiML: {e}")
+            raise
+            
     def send_message_to_call(self, call_sid, message):
         """Send a message to an active call"""
         try:
@@ -66,16 +73,23 @@ class TwilioHandler:
             
             # Create TwiML response
             response = VoiceResponse()
+            
+            # Add the message
             response.say(message, voice='alice')
             
-            # Add gather after message to keep listening
-            response.gather(
+            # Add gather for next input
+            gather = response.gather(
                 input='speech dtmf',
                 action=f"{SERVER_URL}/gather",
                 method='POST',
-                timeout=3600,
-                speechTimeout='auto'
+                timeout=GATHER_TIMEOUT,
+                speechTimeout=SPEECH_TIMEOUT,
+                hints="help, stop, goodbye"
             )
+            
+            # Add fallback for no input
+            response.say("I didn't catch that. Please try again.", voice='alice')
+            response.redirect(f"{SERVER_URL}/gather")
             
             # Convert TwiML to string
             twiml_str = str(response)
@@ -91,20 +105,15 @@ class TwilioHandler:
                 
         except Exception as e:
             logger.error(f"Error sending message to call: {str(e)}", exc_info=True)
-            raise
-            
-    def keep_call_alive(self, call_sid):
-        """Send empty TwiML to keep the call active"""
-        try:
+            # Generate error response TwiML
             response = VoiceResponse()
-            response.gather(
-                input='speech dtmf',
-                action=f"{SERVER_URL}/gather",
-                method='POST',
-                timeout=600,
-                speechTimeout='auto'
-            )
+            response.say("I apologize, but I'm having trouble processing your request. Let's try again.", voice='alice')
+            response.redirect(f"{SERVER_URL}/gather")
             return str(response)
-        except Exception as e:
-            logger.error(f"Error keeping call alive: {e}")
-            return None 
+            
+    def generate_error_response(self, message="An error occurred. Please try again."):
+        """Generate TwiML for error handling"""
+        response = VoiceResponse()
+        response.say(message, voice='alice')
+        response.redirect(f"{SERVER_URL}/gather")
+        return str(response) 

@@ -184,5 +184,20 @@ def start_server():
     """Start the Flask server"""
     app.run(host='0.0.0.0', port=5050, threaded=True)
 
+@app.route('/fallback', methods=['POST'])
+def handle_fallback():
+    """Handle fallback for failed requests"""
+    try:
+        call_sid = request.values.get('CallSid')
+        logger.warning(f"Fallback triggered for call {call_sid}")
+        
+        response = twilio_handler.generate_error_response(
+            "I apologize, but I'm having trouble. Let me restart our conversation."
+        )
+        return Response(response, mimetype='text/xml')
+    except Exception as e:
+        logger.error(f"Error in fallback: {e}")
+        return '', 500
+
 if __name__ == '__main__':
     start_server() 
