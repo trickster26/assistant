@@ -20,4 +20,8 @@ asyncio>=3.4.3
 python-logging-utils>=0.1.0
 
 # Optional: for better audio handling
-librosa>=0.10.1 
+librosa>=0.10.1
+
+# Twilio integration
+twilio>=8.10.0
+flask>=3.0.0  # For webhook handling 
