@@ -65,10 +65,10 @@ class AssistantHandler:
             # Add context if it's a returning customer
             last_conv = self.customer_db.get_last_conversation(phone_number)
             if last_conv:
-                context = f"Previous rental details: {json.dumps(last_conv['data'])}"
+                context = f"Customer context: Previous rental details: {json.dumps(last_conv['data'])}"
                 self.client.beta.threads.messages.create(
                     thread_id=thread_id,
-                    role="system",
+                    role="user",
                     content=context
                 )
             
