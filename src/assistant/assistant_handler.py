@@ -2,6 +2,7 @@ from openai import OpenAI
 from .config.settings import OPENAI_API_KEY
 from .config.rental_config import RENTAL_ASSISTANT_INSTRUCTIONS, RENTAL_SCRIPT
 from .customer_db import CustomerDB
+from .utils.logger import setup_logger
 import asyncio
 import json
 
@@ -13,33 +14,52 @@ class AssistantHandler:
         self.assistant = None
         self.threads = {}
         self.customer_db = CustomerDB()
+        logger.info("AssistantHandler initialized")
         
     def create_assistant(self):
         """Create or get the rental assistant"""
-        if not self.assistant:
-            self.assistant = self.client.beta.assistants.create(
-                name="Bike Rental Assistant",
-                instructions=RENTAL_ASSISTANT_INSTRUCTIONS,
-                model="gpt-4-turbo-preview"
-            )
-        return self.assistant
+        try:
+            if not self.assistant:
+                logger.info("Creating new assistant...")
+                self.assistant = self.client.beta.assistants.create(
+                    name="Bike Rental Assistant",
+                    instructions=RENTAL_ASSISTANT_INSTRUCTIONS,
+                    model="gpt-4-turbo-preview"
+                )
+                logger.info(f"Assistant created with ID: {self.assistant.id}")
+            return self.assistant
+        except Exception as e:
+            logger.error(f"Error creating assistant: {e}")
+            raise
         
     def get_or_create_thread(self, phone_number):
         """Get existing thread or create new one for the customer"""
-        if phone_number not in self.threads:
-            # Check if customer has previous thread
-            last_conv = self.customer_db.get_last_conversation(phone_number)
-            if last_conv:
-                self.threads[phone_number] = last_conv['thread_id']
-            else:
-                thread = self.client.beta.threads.create()
-                self.threads[phone_number] = thread.id
-                
-        return self.threads[phone_number]
+        try:
+            if phone_number not in self.threads:
+                # Check if customer has previous thread
+                last_conv = self.customer_db.get_last_conversation(phone_number)
+                if last_conv:
+                    logger.info(f"Found existing thread for {phone_number}")
+                    self.threads[phone_number] = last_conv['thread_id']
+                else:
+                    logger.info(f"Creating new thread for {phone_number}")
+                    thread = self.client.beta.threads.create()
+                    self.threads[phone_number] = thread.id
+                    
+            return self.threads[phone_number]
+        except Exception as e:
+            logger.error(f"Error in get_or_create_thread: {e}")
+            raise
         
     async def process_rental_conversation(self, phone_number, customer_name, message):
         """Process rental conversation"""
+        logger.info(f"Processing message for {customer_name} ({phone_number})")
+        
         try:
+            # Ensure we have an assistant
+            if not self.assistant:
+                self.create_assistant()
+            
             thread_id = self.get_or_create_thread(phone_number)
             
             # Add context if it's a returning customer
@@ -85,8 +105,11 @@ class AssistantHandler:
                     }
                     self.customer_db.store_conversation(phone_number, thread_id, conversation_data)
                     
+                    logger.info(f"Generated response for {customer_name}")
                     return response
+                    
                 elif run_status.status == 'failed':
+                    logger.error("Assistant run failed")
                     raise Exception("Assistant run failed")
                     
                 await asyncio.sleep(0.5)
