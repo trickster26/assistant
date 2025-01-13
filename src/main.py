@@ -1,48 +1,59 @@
+from assistant.utils.audio_config import configure_audio
+from assistant.client_manager import ClientManager
 from assistant.conversation_manager import ConversationManager
-import asyncio
+from assistant.call_script import CallScript
+from assistant.conversation_history import ConversationHistory
+from test_data.clients import get_test_clients
 from assistant.utils.logger import setup_logger
+import asyncio
 
-logger = setup_logger("main")
+# Configure audio settings
+configure_audio()
+logger = setup_logger("test_client_calls")
 
-async def dynamic_conversation():
-    conv_manager = ConversationManager()
+async def simulate_client_interaction():
+    # Initialize managers
+    client_manager = ClientManager()
+    conversation_manager = ConversationManager()
+    call_script = CallScript()
+    history_manager = ConversationHistory()
     
-    try:
-        # Create a new conversation
-        conversation = conv_manager.create_conversation(
-            instructions="You are a helpful assistant that provides clear and concise responses."
-        )
-        
-        print("Start chatting with the assistant! Type 'exit' to end the conversation.")
-        
-        while True:
-            # Get user input
-            user_input = input("You: ")
+    # Load test clients
+    test_clients = get_test_clients()
+    
+    # Process each client
+    for client_data in test_clients:
+        try:
+            logger.info(f"\nProcessing client: {client_data['name']}")
             
-            if user_input.lower() == 'exit':
-                print("Ending conversation...")
-                break
+            # Get client's last conversation
+            last_conversation = history_manager.get_client_conversation_history(client_data["id"])
             
-            # Send message and get response
-            response = await conv_manager.send_message(
-                conversation.thread_id,
-                user_input
+            # Generate script based on history
+            script = call_script.generate_script(last_conversation[0] if last_conversation else None)
+            
+            # Format script with client's name
+            formatted_script = [
+                line.format(client_name=client_data["name"]) 
+                for line in script
+            ]
+            
+            logger.info(f"Using script: {formatted_script}")
+            
+            # Handle conversation
+            success = await conversation_manager.handle_conversation(
+                client_id=client_data["id"],
+                script=formatted_script
             )
             
-            print(f"Assistant: {response}")
-
-        # Optionally, print conversation stats
-        history = conv_manager.get_conversation_history(conversation.thread_id)
-        stats = history['stats']
-        print("\nConversation Stats:")
-        print(f"Total Messages: {stats['total_messages']}")
-        print(f"User Messages: {stats['user_messages']}")
-        print(f"Assistant Messages: {stats['assistant_messages']}")
-        print(f"Average Response Time: {stats['average_response_time']:.2f} seconds")
-        print(f"Conversation Duration: {stats['conversation_duration']:.2f} minutes")
-
-    except Exception as e:
-        logger.error(f"Error in dynamic conversation: {str(e)}")
+            if success:
+                logger.info(f"Successfully completed conversation with {client_data['name']}")
+            else:
+                logger.warning(f"Conversation with {client_data['name']} completed with warnings")
+            
+        except Exception as e:
+            logger.error(f"Error processing client {client_data['id']}: {str(e)}")
+            continue
 
 if __name__ == "__main__":
-    asyncio.run(dynamic_conversation()) 
+    asyncio.run(simulate_client_interaction()) 

@@ -1,3 +1,23 @@
-openai
-python-dotenv
-pytest 
+# Core OpenAI packages
+openai>=1.59.0
+python-dotenv>=1.0.0
+
+# Audio processing
+pyaudio>=0.2.14
+sounddevice>=0.4.6
+soundfile>=0.12.1
+numpy>=1.24.0
+wave>=0.0.2
+
+# Testing and development
+pytest>=7.4.0
+
+# Async support
+websockets>=11.0.3
+asyncio>=3.4.3
+
+# Logging and utilities
+python-logging-utils>=0.1.0
+
+# Optional: for better audio handling
+librosa>=0.10.1 
