@@ -1,10 +1,11 @@
 from openai import OpenAI
 from .config.settings import OPENAI_API_KEY
-from .config.rental_config import RENTAL_ASSISTANT_INSTRUCTIONS, RENTAL_SCRIPT
+from .config.rental_config import RENTAL_ASSISTANT_INSTRUCTIONS, RENTAL_SCRIPT, AVAILABLE_BIKES
 from .customer_db import CustomerDB
 from .utils.logger import setup_logger
 import asyncio
 import json
+from datetime import datetime
 
 logger = setup_logger(__name__)
 
@@ -24,13 +25,49 @@ class AssistantHandler:
                 self.assistant = self.client.beta.assistants.create(
                     name="Bike Rental Assistant",
                     instructions=RENTAL_ASSISTANT_INSTRUCTIONS,
-                    model="gpt-4-turbo-preview"
+                    model="gpt-4-turbo-preview",
+                    tools=[{
+                        "type": "function",
+                        "function": {
+                            "name": "get_bike_availability",
+                            "description": "Get current bike availability and rates",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "bike_type": {
+                                        "type": "string",
+                                        "enum": ["sports", "cruiser", "mountain"]
+                                    }
+                                }
+                            }
+                        }
+                    }]
                 )
                 logger.info(f"Assistant created with ID: {self.assistant.id}")
             return self.assistant
         except Exception as e:
             logger.error(f"Error creating assistant: {e}")
             raise
+            
+    def format_previous_rentals(self, conversations):
+        """Format previous rental information for context"""
+        if not conversations:
+            return "No previous rental history found."
+            
+        rental_history = []
+        for conv in conversations:
+            if 'data' in conv:
+                rental_data = conv['data']
+                timestamp = datetime.fromisoformat(conv['timestamp'])
+                formatted_date = timestamp.strftime("%Y-%m-%d %H:%M")
+                rental_info = (
+                    f"Date: {formatted_date}\n"
+                    f"Rental details: {rental_data.get('message', 'N/A')}\n"
+                    f"Response: {rental_data.get('response', 'N/A')}\n"
+                )
+                rental_history.append(rental_info)
+                
+        return "\n".join(rental_history)
         
     def get_or_create_thread(self, phone_number):
         """Get existing thread or create new one for the customer"""
@@ -50,7 +87,7 @@ class AssistantHandler:
         except Exception as e:
             logger.error(f"Error in get_or_create_thread: {e}")
             raise
-        
+            
     async def process_rental_conversation(self, phone_number, customer_name, message):
         """Process rental conversation"""
         logger.info(f"Processing message for {customer_name} ({phone_number})")
@@ -62,14 +99,22 @@ class AssistantHandler:
             
             thread_id = self.get_or_create_thread(phone_number)
             
-            # Add context if it's a returning customer
-            last_conv = self.customer_db.get_last_conversation(phone_number)
-            if last_conv:
-                context = f"Customer context: Previous rental details: {json.dumps(last_conv['data'])}"
+            # Get customer data and format context
+            customer = self.customer_db.get_customer(phone_number)
+            if customer and 'conversations' in customer:
+                rental_history = self.format_previous_rentals(customer['conversations'])
+                context_message = (
+                    f"Customer Information:\n"
+                    f"Name: {customer_name}\n"
+                    f"Previous Rental History:\n{rental_history}\n"
+                    f"Current bike availability:\n{json.dumps(AVAILABLE_BIKES, indent=2)}"
+                )
+                
+                # Add context as user message
                 self.client.beta.threads.messages.create(
                     thread_id=thread_id,
                     role="user",
-                    content=context
+                    content=context_message
                 )
             
             # Add the current message
@@ -101,7 +146,11 @@ class AssistantHandler:
                     conversation_data = {
                         'customer_name': customer_name,
                         'message': message,
-                        'response': response
+                        'response': response,
+                        'rental_details': {
+                            'timestamp': datetime.now().isoformat(),
+                            'status': 'inquiry'
+                        }
                     }
                     self.customer_db.store_conversation(phone_number, thread_id, conversation_data)
                     
@@ -116,4 +165,4 @@ class AssistantHandler:
                 
         except Exception as e:
             logger.error(f"Error processing rental conversation: {e}")
-            return "I apologize, but I'm having trouble processing your request. Could you please try again?"
+            return "I apologize, but I'm having trouble accessing your previous rental information. Could you please tell me what you'd like to rent today?"
