@@ -1,9 +1,10 @@
 from twilio.rest import Client
-from twilio.twiml.voice_response import VoiceResponse, Connect
+from twilio.twiml.voice_response import VoiceResponse, Connect, Start, Stream
 from .config.twilio_config import (
     TWILIO_ACCOUNT_SID,
     TWILIO_AUTH_TOKEN,
-    TWILIO_PHONE_NUMBER
+    TWILIO_PHONE_NUMBER,
+    SERVER_URL
 )
 from .utils.logger import setup_logger
 
@@ -21,7 +22,11 @@ class TwilioHandler:
                 to=to_number,
                 from_=self.phone_number,
                 url=f"{SERVER_URL}/incoming-call",
-                record=True
+                record=True,
+                timeout=600,  # 10 min timeout
+                status_callback=f"{SERVER_URL}/call-status",
+                status_callback_event=['initiated', 'ringing', 'answered', 'completed'],
+                status_callback_method='POST'
             )
             logger.info(f"Initiated call: {call.sid}")
             return call.sid
@@ -34,24 +39,54 @@ class TwilioHandler:
         response = VoiceResponse()
         
         # Add initial greeting
-        response.say("Hello! I'm your AI assistant. How can I help you today?")
+        response.say("Hello! I'm your AI assistant. How can I help you today?", voice='alice')
         
-        # Connect to media stream
+        # Start the stream
         connect = Connect()
-        connect.stream(url=f"{SERVER_URL}/media-stream")
+        stream = Stream(name='audio_stream', url=f"{SERVER_URL}/media-stream")
+        stream.parameter(name='track', value='both_tracks')
+        connect.stream(stream)
         response.append(connect)
         
-        return str(response) 
-
+        # Add a gather to keep the call alive and capture DTMF
+        response.gather(
+            input='speech dtmf',
+            action=f"{SERVER_URL}/gather",
+            method='POST',
+            timeout=3600,
+            speechTimeout='auto'
+        )
+        
+        return str(response)
+        
     def send_message_to_call(self, call_sid, message):
         """Send a message to an active call"""
         try:
             response = VoiceResponse()
-            response.say(message)
+            response.say(message, voice='alice')
+            
+            # Add gather after message to keep listening
+            response.gather(
+                input='speech dtmf',
+                action=f"{SERVER_URL}/gather",
+                method='POST',
+                timeout=3600,
+                speechTimeout='auto'
+            )
             
             self.client.calls(call_sid).update(
                 twiml=str(response)
             )
             logger.info(f"Sent message to call {call_sid}")
         except Exception as e:
-            logger.error(f"Error sending message to call: {e}") 
+            logger.error(f"Error sending message to call: {e}")
+            
+    def keep_call_alive(self, call_sid):
+        """Send empty TwiML to keep the call active"""
+        try:
+            response = VoiceResponse()
+            response.play('', loop=0)  # Silent audio to keep connection
+            return str(response)
+        except Exception as e:
+            logger.error(f"Error keeping call alive: {e}")
+            return None 

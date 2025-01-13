@@ -8,6 +8,8 @@ import threading
 import queue
 import tempfile
 import os
+import time
+from twilio.twiml.voice_response import VoiceResponse
 
 app = Flask(__name__)
 logger = setup_logger(__name__)
@@ -19,9 +21,8 @@ assistant_handler = AssistantHandler()
 media_queues = {}  # Store media queues by call SID
 active_calls = {}  # Store call state
 
-@app.before_first_request
-def setup_assistant():
-    """Initialize the OpenAI assistant"""
+# Initialize the assistant
+with app.app_context():
     assistant_handler.create_assistant()
 
 @app.route('/incoming-call', methods=['POST'])
@@ -34,7 +35,8 @@ def handle_incoming_call():
         # Initialize call state
         active_calls[call_sid] = {
             'last_transcript': None,
-            'processing': False
+            'processing': False,
+            'start_time': time.time()
         }
         
         # Generate TwiML response with media stream
@@ -43,6 +45,58 @@ def handle_incoming_call():
     except Exception as e:
         logger.error(f"Error handling incoming call: {e}")
         return str(e), 500
+
+@app.route('/gather', methods=['POST'])
+def handle_gather():
+    """Handle gathered speech input"""
+    try:
+        call_sid = request.values.get('CallSid')
+        speech_result = request.values.get('SpeechResult')
+        
+        if speech_result:
+            logger.info(f"Received speech: {speech_result}")
+            
+            # Process with assistant
+            response = asyncio.run(assistant_handler.process_message(call_sid, speech_result))
+            
+            # Send response back to call
+            twilio_handler.send_message_to_call(call_sid, response)
+            
+        # Return TwiML to continue gathering
+        response = VoiceResponse()
+        response.gather(
+            input='speech dtmf',
+            action='/gather',
+            method='POST',
+            timeout=3600,
+            speechTimeout='auto'
+        )
+        
+        return Response(str(response), mimetype='text/xml')
+        
+    except Exception as e:
+        logger.error(f"Error in gather: {e}")
+        return str(e), 500
+
+@app.route('/call-status', methods=['POST'])
+def handle_call_status():
+    """Handle call status callbacks"""
+    try:
+        call_sid = request.values.get('CallSid')
+        call_status = request.values.get('CallStatus')
+        logger.info(f"Call {call_sid} status: {call_status}")
+        
+        if call_status in ['completed', 'failed']:
+            # Cleanup call resources
+            if call_sid in active_calls:
+                del active_calls[call_sid]
+            if call_sid in media_queues:
+                del media_queues[call_sid]
+                
+    except Exception as e:
+        logger.error(f"Error in call status: {e}")
+        
+    return '', 200
 
 @app.route('/media-stream', methods=['POST'])
 def handle_media_stream():
@@ -68,61 +122,54 @@ def handle_media_stream():
 async def process_media_stream(call_sid):
     """Process media stream for a call"""
     try:
-        while True:
-            # Get audio from queue
-            audio_data = media_queues[call_sid].get()
-            
-            if active_calls[call_sid]['processing']:
-                continue
-                
-            active_calls[call_sid]['processing'] = True
-            
+        while call_sid in active_calls:
             try:
-                # Save audio to temporary file
-                with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_audio:
-                    temp_audio.write(audio_data)
-                    temp_audio_path = temp_audio.name
+                # Get audio from queue with timeout
+                audio_data = media_queues[call_sid].get(timeout=5)
                 
-                # Transcribe audio
-                transcript = voice_chat.transcribe_audio(temp_audio_path)
+                if active_calls[call_sid]['processing']:
+                    continue
+                    
+                active_calls[call_sid]['processing'] = True
                 
-                # Clean up temp file
-                os.unlink(temp_audio_path)
-                
-                if transcript and transcript != active_calls[call_sid]['last_transcript']:
-                    active_calls[call_sid]['last_transcript'] = transcript
-                    logger.info(f"Transcribed: {transcript}")
+                try:
+                    # Save audio to temporary file
+                    with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_audio:
+                        temp_audio.write(audio_data)
+                        temp_audio_path = temp_audio.name
                     
-                    # Process with assistant
-                    response = await assistant_handler.process_message(call_sid, transcript)
-                    logger.info(f"Assistant response: {response}")
+                    # Transcribe audio
+                    transcript = voice_chat.transcribe_audio(temp_audio_path)
                     
-                    # Convert to speech
-                    speech_file = voice_chat.text_to_speech(response)
+                    # Clean up temp file
+                    os.unlink(temp_audio_path)
                     
-                    if speech_file:
-                        # TODO: Send audio back to Twilio stream
-                        # For now, we'll use TwiML Say
+                    if transcript and transcript != active_calls[call_sid].get('last_transcript'):
+                        active_calls[call_sid]['last_transcript'] = transcript
+                        logger.info(f"Transcribed: {transcript}")
+                        
+                        # Process with assistant
+                        response = await assistant_handler.process_message(call_sid, transcript)
+                        logger.info(f"Assistant response: {response}")
+                        
+                        # Send response back to call
                         twilio_handler.send_message_to_call(call_sid, response)
                         
-                        # Clean up speech file
-                        os.unlink(speech_file)
-                        
-            finally:
-                active_calls[call_sid]['processing'] = False
+                finally:
+                    active_calls[call_sid]['processing'] = False
+                    
+            except queue.Empty:
+                continue
                 
     except Exception as e:
         logger.error(f"Error processing media stream: {e}")
     finally:
-        # Cleanup
         if call_sid in media_queues:
             del media_queues[call_sid]
-        if call_sid in active_calls:
-            del active_calls[call_sid]
 
 def start_server():
     """Start the Flask server"""
-    app.run(host='0.0.0.0', port=5050)
+    app.run(host='0.0.0.0', port=5050, threaded=True)
 
 if __name__ == '__main__':
     start_server() 
