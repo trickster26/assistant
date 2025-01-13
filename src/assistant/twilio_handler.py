@@ -62,6 +62,9 @@ class TwilioHandler:
     def send_message_to_call(self, call_sid, message):
         """Send a message to an active call"""
         try:
+            logger.info(f"Sending message to call {call_sid}: {message}")
+            
+            # Create TwiML response
             response = VoiceResponse()
             response.say(message, voice='alice')
             
@@ -74,18 +77,33 @@ class TwilioHandler:
                 speechTimeout='auto'
             )
             
-            self.client.calls(call_sid).update(
-                twiml=str(response)
-            )
-            logger.info(f"Sent message to call {call_sid}")
+            # Convert TwiML to string
+            twiml_str = str(response)
+            logger.info(f"Generated TwiML: {twiml_str}")
+            
+            # Update the call
+            call = self.client.calls(call_sid).fetch()
+            if call.status in ['in-progress', 'ringing']:
+                self.client.calls(call_sid).update(twiml=twiml_str)
+                logger.info(f"Successfully updated call {call_sid}")
+            else:
+                logger.warning(f"Call {call_sid} is not active (status: {call.status})")
+                
         except Exception as e:
-            logger.error(f"Error sending message to call: {e}")
+            logger.error(f"Error sending message to call: {str(e)}", exc_info=True)
+            raise
             
     def keep_call_alive(self, call_sid):
         """Send empty TwiML to keep the call active"""
         try:
             response = VoiceResponse()
-            response.play('', loop=0)  # Silent audio to keep connection
+            response.gather(
+                input='speech dtmf',
+                action=f"{SERVER_URL}/gather",
+                method='POST',
+                timeout=600,
+                speechTimeout='auto'
+            )
             return str(response)
         except Exception as e:
             logger.error(f"Error keeping call alive: {e}")
