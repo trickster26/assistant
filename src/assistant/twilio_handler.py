@@ -42,3 +42,16 @@ class TwilioHandler:
         response.append(connect)
         
         return str(response) 
+
+    def send_message_to_call(self, call_sid, message):
+        """Send a message to an active call"""
+        try:
+            response = VoiceResponse()
+            response.say(message)
+            
+            self.client.calls(call_sid).update(
+                twiml=str(response)
+            )
+            logger.info(f"Sent message to call {call_sid}")
+        except Exception as e:
+            logger.error(f"Error sending message to call: {e}") 
