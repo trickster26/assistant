@@ -1,0 +1,192 @@
+{
+  "+917009614671": {
+    "name": "John Smith",
+    "last_contact": "outbound_call",
+    "rental_status": "pending",
+    "current_call_sid": "CA8c5a46a10a554d7afe18de3827dab8c1"
+  },
+  "+17178329325": {
+    "conversations": [
+      {
+        "thread_id": "thread_ZC1ZQIj73D3tSSdKFS6xTFny",
+        "timestamp": "2025-01-13T16:09:42.422891",
+        "data": {
+          "customer_name": "Customer",
+          "message": "Rent bike.",
+          "response": "I'd be happy to help you rent a bike! Could you please provide me with some details? \n\n1. What is your desired rental start date and time?\n2. How long do you plan to rent the bike?\n3. Do you have a preferred bike type: Sports Bike, Cruiser, or Mountain Bike?\n4. Are you okay with the rates: $30/day for Sports Bike, $25/day for Cruiser, and $35/day for Mountain Bike?\n\nOnce I have this information, I can assist you further!"
+        }
+      },
+      {
+        "thread_id": "thread_ZC1ZQIj73D3tSSdKFS6xTFny",
+        "timestamp": "2025-01-13T16:19:52.777982",
+        "data": {
+          "customer_name": "Customer",
+          "message": "IAA.",
+          "response": "Welcome back! I see you're interested in renting a bike again. Let's get started. \n\nCould you please provide the following details once more?\n\n1. What is your desired rental start date and time?\n2. How long do you plan to rent the bike?\n3. Do you have a preferred bike type: Sports Bike, Cruiser, or Mountain Bike?\n4. Are you okay with the rates: $30/day for Sports Bike, $25/day for Cruiser, and $35/day for Mountain Bike?\n\nOnce I have this information, I can confirm your rental!"
+        }
+      },
+      {
+        "thread_id": "thread_ZC1ZQIj73D3tSSdKFS6xTFny",
+        "timestamp": "2025-01-13T16:21:11.687331",
+        "data": {
+          "customer_name": "Customer",
+          "message": "I want to rent a sports bike.",
+          "response": "Great choice! A Sports Bike will definitely give you a thrilling ride. \n\nTo finalize your rental, I still need a few more details:\n\n1. What is your desired rental start date and time?\n2. How long do you plan to rent the bike?\n3. Are you okay with the rate of $30 per day for the Sports Bike?\n\nOnce I have this information, I can confirm your rental!"
+        }
+      },
+      {
+        "thread_id": "thread_ZC1ZQIj73D3tSSdKFS6xTFny",
+        "timestamp": "2025-01-13T16:22:11.502575",
+        "data": {
+          "customer_name": "Customer",
+          "message": "I want to rent bike Tom today.",
+          "response": "Thank you for the update! Just to clarify, you\u2019d like to rent a Sports Bike starting today. \n\n1. What time would you like to start your rental today? \n2. How long do you plan to rent the bike? \n3. Are you okay with the rate of $30 per day for the Sports Bike?\n\nOnce I have this information, I can confirm your rental!"
+        }
+      },
+      {
+        "thread_id": "thread_ZC1ZQIj73D3tSSdKFS6xTFny",
+        "timestamp": "2025-01-13T16:23:14.979809",
+        "data": {
+          "customer_name": "Customer",
+          "message": "I want to rent a bike from 6:00 today evening.",
+          "response": "Perfect! You'll be renting the Sports Bike starting today at 6:00 PM. \n\nJust to confirm:\n1. What is the duration of the rental (how many hours or days do you plan to rent it for)?\n2. Are you okay with the rate of $30 per day for the Sports Bike?\n\nOnce I have this last bit of information, I can finalize your rental!"
+        }
+      },
+      {
+        "thread_id": "thread_ZC1ZQIj73D3tSSdKFS6xTFny",
+        "timestamp": "2025-01-13T16:24:07.767398",
+        "data": {
+          "customer_name": "Customer",
+          "message": "I want to buy poker today.",
+          "response": "It seems like you're looking for something different today! Unfortunately, I can only assist with bike rentals. If you're still interested in renting that Sports Bike starting at 6:00 PM today, please let me know the duration of the rental, and I can finalize it for you. If you need help with something else in the future, feel free to ask!"
+        }
+      },
+      {
+        "thread_id": "thread_ZC1ZQIj73D3tSSdKFS6xTFny",
+        "timestamp": "2025-01-13T16:25:01.773788",
+        "data": {
+          "customer_name": "Customer",
+          "message": "Okay,  goodbye.",
+          "response": "Thank you for chatting with me! If you have any questions in the future or decide to rent a bike, don\u2019t hesitate to reach out. Have a great day and goodbye!"
+        }
+      },
+      {
+        "thread_id": "thread_ZC1ZQIj73D3tSSdKFS6xTFny",
+        "timestamp": "2025-01-13T16:26:30.694218",
+        "data": {
+          "customer_name": "Customer",
+          "message": "Is going to dinner with my previous order.",
+          "response": "It sounds like you're planning to enjoy dinner! Referring back to our previous conversation, you were looking to rent a Sports Bike starting today at 6:00 PM. \n\nIf you'd like to proceed with that rental before heading out for dinner, please let me know the duration you have in mind, and I can finalize your order for you. If you\u2019ll be busy with dinner and want to handle this later, that's absolutely fine too!"
+        }
+      },
+      {
+        "thread_id": "thread_ZC1ZQIj73D3tSSdKFS6xTFny",
+        "timestamp": "2025-01-13T16:52:44.897163",
+        "data": {
+          "customer_name": "Customer",
+          "message": "Please continue with my previous.",
+          "response": "Absolutely! Let's continue with your rental of the Sports Bike starting today at 6:00 PM.\n\nTo finalize your rental, I just need to know:\n1. What is the duration of the rental (how many hours or days do you plan to rent it for)?\n2. Are you okay with the rate of $30 per day for the Sports Bike?\n\nOnce you provide this information, I can confirm your rental!"
+        }
+      },
+      {
+        "thread_id": "thread_ZC1ZQIj73D3tSSdKFS6xTFny",
+        "timestamp": "2025-01-13T16:53:52.225707",
+        "data": {
+          "customer_name": "Customer",
+          "message": "I want arranged by Paul murtha.",
+          "response": "It seems like you are referring to an arrangement by Paul Murtha, but I'm here to assist you with your bike rental.\n\nLet\u2019s ensure we finalize your Sports Bike rental first. Can you please confirm the following:\n\n1. The duration of the rental (how many hours or days).\n2. Whether you're okay with the rate of $30 per day for the Sports Bike.\n\nOnce I have that information, I'll be able to confirm your rental! If you need assistance with something related to Paul Murtha afterward, please let me know!"
+        }
+      },
+      {
+        "thread_id": "thread_ZC1ZQIj73D3tSSdKFS6xTFny",
+        "timestamp": "2025-01-13T16:54:58.958967",
+        "data": {
+          "customer_name": "Customer",
+          "message": "Alarm clock.",
+          "response": "It seems like you might be referencing a separate topic about an alarm clock. However, I'm here to assist with your bike rental. \n\nTo finalize your Sports Bike rental starting today at 6:00 PM, please confirm:\n1. The duration of the rental (how many hours or days).\n2. If you're okay with the $30 per day rate for the Sports Bike.\n\nOnce I have that information, I'll be able to confirm your rental. If you need assistance with alarm clocks or anything else afterward, feel free to let me know!"
+        }
+      },
+      {
+        "thread_id": "thread_ZC1ZQIj73D3tSSdKFS6xTFny",
+        "timestamp": "2025-01-13T16:56:02.199355",
+        "data": {
+          "customer_name": "Customer",
+          "message": "I want to rent this week for today.",
+          "response": "Got it! You want to rent the Sports Bike starting today and for the duration of this week. \n\nJust to confirm the details:\n1. Are you looking to rent it for a full week (7 days) starting today?\n2. Are you okay with the total rate of $30 per day, which comes to $210 for the week?\n\nOnce I have your confirmation on these details, I can finalize your rental!"
+        }
+      },
+      {
+        "thread_id": "thread_ZC1ZQIj73D3tSSdKFS6xTFny",
+        "timestamp": "2025-01-13T16:57:00.236119",
+        "data": {
+          "customer_name": "Customer",
+          "message": "Not for a week. I want for this bike for $30.",
+          "response": "Thank you for clarifying! You want to rent the Sports Bike starting today for just one day at the rate of $30. \n\nTo confirm:\n- Rental Start: Today at 6:00 PM\n- Duration: 1 day\n- Rate: $30\n\nPlease confirm that this is correct, and I\u2019ll finalize your rental!"
+        }
+      },
+      {
+        "thread_id": "thread_ZC1ZQIj73D3tSSdKFS6xTFny",
+        "timestamp": "2025-01-13T16:57:49.957101",
+        "data": {
+          "customer_name": "Customer",
+          "message": "Norco Target.",
+          "response": "It seems like you're mentioning \"Norco Target,\" which might be a brand or model of bike. However, I currently have the Sports Bike available for rental.\n\nTo clarify, would you like to proceed with the Sports Bike rental starting today at 6:00 PM for one day at the rate of $30? \n\nIf you're looking for a specific bike like the Norco Target, I can check if we have that in stock. Please let me know how you'd like to proceed!"
+        }
+      },
+      {
+        "thread_id": "thread_ZC1ZQIj73D3tSSdKFS6xTFny",
+        "timestamp": "2025-01-13T16:58:46.406347",
+        "data": {
+          "customer_name": "Customer",
+          "message": "I want a bike for 30 days.",
+          "response": "Got it! You\u2019d like to rent a bike for 30 days.\n\nTo confirm the details:\n- Bike Type: Sports Bike\n- Rental Duration: 30 days\n- Rate: $30 per day, which totals $900 for the month.\n\nPlease confirm that this is correct, and I can finalize your rental!"
+        }
+      },
+      {
+        "thread_id": "thread_ZC1ZQIj73D3tSSdKFS6xTFny",
+        "timestamp": "2025-01-13T16:59:36.567556",
+        "data": {
+          "customer_name": "Customer",
+          "message": "is this is correct but I also want to",
+          "response": "It looks like you want to confirm the details, but you also have something additional to mention. \n\nJust to reiterate:\n- Bike Type: Sports Bike\n- Rental Duration: 30 days\n- Rate: $30 per day, totaling $900 for the month.\n\nPlease let me know what else you would like to add or any other preferences you have!"
+        }
+      },
+      {
+        "thread_id": "thread_ZC1ZQIj73D3tSSdKFS6xTFny",
+        "timestamp": "2025-01-13T17:00:25.234994",
+        "data": {
+          "customer_name": "Customer",
+          "message": "I want to rent two bikes.",
+          "response": "Great! You\u2019d like to rent two Sports Bikes for 30 days. \n\nTo confirm the updated details:\n- Bike Type: Sports Bike\n- Quantity: 2 Bikes\n- Rental Duration: 30 days\n- Rate: $30 per day per bike, totaling $1,800 for the month.\n\nPlease confirm that this is correct, and I can finalize your rental!"
+        }
+      },
+      {
+        "thread_id": "thread_ZC1ZQIj73D3tSSdKFS6xTFny",
+        "timestamp": "2025-01-13T17:01:22.215975",
+        "data": {
+          "customer_name": "Customer",
+          "message": "Yes, finally.",
+          "response": "Fantastic! Just to recap the final details of your rental:\n\n- **Bike Type**: Sports Bike\n- **Quantity**: 2 Bikes\n- **Rental Duration**: 30 days\n- **Rate**: $30 per day per bike\n- **Total Cost**: $1,800 for the month.\n\nI'll proceed with finalizing your rental now. Thank you for choosing our service! If you have any further questions or need assistance in the future, feel free to reach out. Enjoy your biking adventures!"
+        }
+      },
+      {
+        "thread_id": "thread_ZC1ZQIj73D3tSSdKFS6xTFny",
+        "timestamp": "2025-01-13T17:02:18.283920",
+        "data": {
+          "customer_name": "Customer",
+          "message": "Thank you.",
+          "response": "You're very welcome! If you have any more questions in the future or need assistance, don't hesitate to reach out. Enjoy your biking experience, and have a great day!"
+        }
+      },
+      {
+        "thread_id": "thread_ZC1ZQIj73D3tSSdKFS6xTFny",
+        "timestamp": "2025-01-13T17:09:34.720771",
+        "data": {
+          "customer_name": "Customer",
+          "message": "Connect to  speaker.",
+          "response": "It seems like you're looking to connect to a speaker. However, I'm here to assist you with bike rentals and related inquiries. If you have questions about your bike rental or need help with something specific, please let me know!"
+        }
+      }
+    ]
+  }
+}

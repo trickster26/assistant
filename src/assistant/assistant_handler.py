@@ -25,7 +25,7 @@ class AssistantHandler:
                 self.assistant = self.client.beta.assistants.create(
                     name="Bike Rental Assistant",
                     instructions=RENTAL_ASSISTANT_INSTRUCTIONS,
-                    model="gpt-4-turbo-preview",
+                    model="gpt-4o-mini",
                     tools=[{
                         "type": "function",
                         "function": {

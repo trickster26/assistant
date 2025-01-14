@@ -58,11 +58,11 @@ def main():
     customers = [
         {
             "name": "John Smith",
-            "phone": "+1234567890"
+            "phone": "+917009614671"
         },
         {
             "name": "Sarah Johnson",
-            "phone": "+1987654321"
+            "phone": "+9174885 41302"
         }
     ]
     
