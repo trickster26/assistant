@@ -1,130 +1,54 @@
 from openai import OpenAI
 from .config.settings import OPENAI_API_KEY
-from .config.rental_config import RENTAL_ASSISTANT_INSTRUCTIONS, RENTAL_SCRIPT, AVAILABLE_BIKES
-from .customer_db import CustomerDB
-from .utils.logger import setup_logger
-import asyncio
-import json
+from .config.rental_config import RENTAL_ASSISTANT_INSTRUCTIONS
+from .voice_handler import VoiceHandler
 from datetime import datetime
+import json
+import asyncio
 
 logger = setup_logger(__name__)
 
 class AssistantHandler:
     def __init__(self):
         self.client = OpenAI(api_key=OPENAI_API_KEY)
+        self.voice_handler = VoiceHandler(OPENAI_API_KEY)
         self.assistant = None
         self.threads = {}
-        self.customer_db = CustomerDB()
-        logger.info("AssistantHandler initialized")
         
     def create_assistant(self):
         """Create or get the rental assistant"""
         try:
             if not self.assistant:
-                logger.info("Creating new assistant...")
                 self.assistant = self.client.beta.assistants.create(
                     name="Bike Rental Assistant",
                     instructions=RENTAL_ASSISTANT_INSTRUCTIONS,
-                    model="gpt-4o-mini",
-                    tools=[{
-                        "type": "function",
-                        "function": {
-                            "name": "get_bike_availability",
-                            "description": "Get current bike availability and rates",
-                            "parameters": {
-                                "type": "object",
-                                "properties": {
-                                    "bike_type": {
-                                        "type": "string",
-                                        "enum": ["sports", "cruiser", "mountain"]
-                                    }
-                                }
-                            }
-                        }
-                    }]
+                    model="gpt-4-turbo-preview"
                 )
-                logger.info(f"Assistant created with ID: {self.assistant.id}")
             return self.assistant
         except Exception as e:
             logger.error(f"Error creating assistant: {e}")
             raise
             
-    def format_previous_rentals(self, conversations):
-        """Format previous rental information for context"""
-        if not conversations:
-            return "No previous rental history found."
-            
-        rental_history = []
-        for conv in conversations:
-            if 'data' in conv:
-                rental_data = conv['data']
-                timestamp = datetime.fromisoformat(conv['timestamp'])
-                formatted_date = timestamp.strftime("%Y-%m-%d %H:%M")
-                rental_info = (
-                    f"Date: {formatted_date}\n"
-                    f"Rental details: {rental_data.get('message', 'N/A')}\n"
-                    f"Response: {rental_data.get('response', 'N/A')}\n"
-                )
-                rental_history.append(rental_info)
-                
-        return "\n".join(rental_history)
-        
-    def get_or_create_thread(self, phone_number):
-        """Get existing thread or create new one for the customer"""
+    async def process_audio_conversation(self, audio_data, thread_id=None):
+        """Process audio conversation"""
         try:
-            if phone_number not in self.threads:
-                # Check if customer has previous thread
-                last_conv = self.customer_db.get_last_conversation(phone_number)
-                if last_conv:
-                    logger.info(f"Found existing thread for {phone_number}")
-                    self.threads[phone_number] = last_conv['thread_id']
-                else:
-                    logger.info(f"Creating new thread for {phone_number}")
-                    thread = self.client.beta.threads.create()
-                    self.threads[phone_number] = thread.id
-                    
-            return self.threads[phone_number]
-        except Exception as e:
-            logger.error(f"Error in get_or_create_thread: {e}")
-            raise
+            # Convert speech to text
+            text = self.voice_handler.speech_to_text(audio_data)
+            logger.info(f"Transcribed text: {text}")
             
-    async def process_rental_conversation(self, phone_number, customer_name, message):
-        """Process rental conversation"""
-        logger.info(f"Processing message for {customer_name} ({phone_number})")
-        
-        try:
-            # Ensure we have an assistant
-            if not self.assistant:
-                self.create_assistant()
+            # Create or get thread
+            if not thread_id:
+                thread = self.client.beta.threads.create()
+                thread_id = thread.id
             
-            thread_id = self.get_or_create_thread(phone_number)
-            
-            # Get customer data and format context
-            customer = self.customer_db.get_customer(phone_number)
-            if customer and 'conversations' in customer:
-                rental_history = self.format_previous_rentals(customer['conversations'])
-                context_message = (
-                    f"Customer Information:\n"
-                    f"Name: {customer_name}\n"
-                    f"Previous Rental History:\n{rental_history}\n"
-                    f"Current bike availability:\n{json.dumps(AVAILABLE_BIKES, indent=2)}"
-                )
-                
-                # Add context as user message
-                self.client.beta.threads.messages.create(
-                    thread_id=thread_id,
-                    role="user",
-                    content=context_message
-                )
-            
-            # Add the current message
+            # Add message to thread
             self.client.beta.threads.messages.create(
                 thread_id=thread_id,
                 role="user",
-                content=message
+                content=text
             )
             
-            # Run the assistant
+            # Run assistant
             run = self.client.beta.threads.runs.create(
                 thread_id=thread_id,
                 assistant_id=self.assistant.id
@@ -136,33 +60,28 @@ class AssistantHandler:
                     thread_id=thread_id,
                     run_id=run.id
                 )
+                
                 if run_status.status == 'completed':
+                    # Get assistant's response
                     messages = self.client.beta.threads.messages.list(
                         thread_id=thread_id
                     )
-                    response = messages.data[0].content[0].text.value
+                    response_text = messages.data[0].content[0].text.value
                     
-                    # Store conversation data
-                    conversation_data = {
-                        'customer_name': customer_name,
-                        'message': message,
-                        'response': response,
-                        'rental_details': {
-                            'timestamp': datetime.now().isoformat(),
-                            'status': 'inquiry'
-                        }
+                    # Convert response to speech
+                    audio_file = self.voice_handler.text_to_speech(response_text)
+                    
+                    return {
+                        'thread_id': thread_id,
+                        'text': response_text,
+                        'audio_file': audio_file
                     }
-                    self.customer_db.store_conversation(phone_number, thread_id, conversation_data)
-                    
-                    logger.info(f"Generated response for {customer_name}")
-                    return response
                     
                 elif run_status.status == 'failed':
-                    logger.error("Assistant run failed")
                     raise Exception("Assistant run failed")
                     
                 await asyncio.sleep(0.5)
                 
         except Exception as e:
-            logger.error(f"Error processing rental conversation: {e}")
-            return "I apologize, but I'm having trouble accessing your previous rental information. Could you please tell me what you'd like to rent today?"
+            logger.error(f"Error processing audio conversation: {e}")
+            raise

@@ -25,3 +25,4 @@ librosa>=0.10.1
 # Twilio integration
 twilio>=8.10.0
 flask>=3.0.0  # For webhook handling 
+websockets
