@@ -24,7 +24,7 @@ class AssistantHandler:
                 self.assistant = self.client.beta.assistants.create(
                     name="Bike Rental Assistant",
                     instructions=RENTAL_ASSISTANT_INSTRUCTIONS,
-                    model="gpt-4-turbo-preview"
+                    model="gpt-4o-mini"
                 )
                 logger.info(f"Assistant created with ID: {self.assistant.id}")
             return self.assistant
